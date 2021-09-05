@@ -1,0 +1,64 @@
+before:
+  hooks:
+  - go mod tidy
+
+builds:
+  - binary: testci
+    main: ./
+    goarch:
+      - amd64
+    goos:
+      - linux
+      - darwin
+      - windows
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -a -installsuffix cgo
+      - -X main.gitTag={{.Tag}}
+      - -s
+      - -w
+
+archives:
+  - builds:
+    - testci
+    format_overrides:
+      - goos: windows
+        format: zip
+    replacements:
+      amd64: 64-bit
+      darwin: macOS
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^WIP:'
+      - Merge pull request
+      - Merge branch
+      - go mod tidy
+
+dockers:
+  - dockerfile: Dockerfile
+    image_templates:
+      - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:{{ .Version }}"
+      - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:latest"
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.licenses=Apache2.0"
+      - "--platform=linux/amd64"
+    goos: linux
+    goarch: amd64
+    use: docker
