@@ -3,7 +3,7 @@ before:
   - go mod tidy
 
 builds:
-  - binary: testci
+  - binary: zabbix_exporter
     main: ./
     goarch:
       - amd64
