@@ -1,6 +1,5 @@
 # Zabbix Server Exporter for Prometheus
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/shdubna/zabbix_exporter)](https://goreportcard.com/report/github.com/shdubna/zabbix_exporter)
 [![GitHub CodeQL](https://github.com/shdubna/zabbix_exporter/workflows/CodeQL/badge.svg)](https://github.com/shdubna/zabbix_exporter/actions?query=workflow%3CodeQL)
 [![GitHub Release](https://github.com/shdubna/zabbix_exporter/workflows/Release/badge.svg)](https://github.com/shdubna/zabbix_exporter/actions?query=workflow%3ARelease)
 [![GitHub license](https://img.shields.io/github/license/shdubna/zabbix_exporter.svg)](https://github.com/shdubna/zabbix_exporter/blob/main/LICENSE)
