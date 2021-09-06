@@ -21,7 +21,7 @@ builds:
 
 archives:
   - builds:
-    - testci
+    - zabbix_exporter
     format_overrides:
       - goos: windows
         format: zip
