@@ -154,9 +154,54 @@ func getMetricRecursive(metrics map[string]interface{}, ch chan<- prometheus.Met
 				newMetric.Set(1)
 				newMetric.Collect(ch)
 			}
+		case []interface{}:
+			if key == "proxy" {
+				collectProxyInfo(ch, value.([]interface{}))
+			}
 		case map[string]interface{}:
 			//log.Printf("other %v",value)
 			getMetricRecursive(value.(map[string]interface{}), ch, name+"_")
+		}
+	}
+}
+
+// collectProxyInfo parses proxy section all strings values become labels
+func collectProxyInfo(ch chan<- prometheus.Metric, proxies []interface{}) {
+
+	for _, proxy := range proxies {
+
+		labels := make(map[string]string)
+		labelsNames := make([]string, 0)
+		if p, ok := proxy.(map[string]interface{}); ok {
+			// Get all strings as labels
+			for key, value := range p {
+				if v, ok := value.(string); ok {
+					labels[key] = v
+					labelsNames = append(labelsNames, key)
+				}
+			}
+			for key, value := range p {
+				var floatMetric float64 = 0
+				name := "proxy_" + key
+				switch value.(type) {
+				case float64:
+					floatMetric = value.(float64)
+				case bool:
+					if value.(bool) {
+						floatMetric = 1
+					} else {
+						floatMetric = 0
+					}
+				default:
+					continue
+				}
+				newMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+					Namespace: namespace,
+					Name:      name,
+				}, labelsNames).With(labels)
+				newMetric.Set(floatMetric)
+				newMetric.Collect(ch)
+			}
 		}
 	}
 }
