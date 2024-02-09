@@ -25,9 +25,6 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
-    replacements:
-      amd64: 64-bit
-      darwin: macOS
 
 checksum:
   name_template: 'checksums.txt'
