@@ -86,7 +86,7 @@ func NewZabbixResponse(data []uint8) (r *ZabbixResponse, err error) {
 	return
 }
 
-// Describe describe metrics
+// Describe metrics
 func (zabbix *Zabbix) Describe(ch chan<- *prometheus.Desc) {
 
 	metricCh := make(chan prometheus.Metric)
@@ -140,7 +140,6 @@ func getMetricRecursive(metrics map[string]interface{}, ch chan<- prometheus.Met
 			newMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      metricName(name),
-				//Help:      "Number of " + name + " currently processed",
 			}, []string{}).WithLabelValues()
 			newMetric.Set(value.(float64))
 			newMetric.Collect(ch)
@@ -157,7 +156,6 @@ func getMetricRecursive(metrics map[string]interface{}, ch chan<- prometheus.Met
 		case []interface{}:
 			parseSlice(ch, key, value.([]interface{}))
 		case map[string]interface{}:
-			//log.Printf("other %v",value)
 			getMetricRecursive(value.(map[string]interface{}), ch, name+"_")
 		}
 	}
