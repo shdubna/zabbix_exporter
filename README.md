@@ -14,7 +14,7 @@ consumption.
 1. [Configure zabbix server/proxy](https://www.zabbix.com/documentation/current/manual/appendix/items/remote_stats) to allow export internal stats:
    - add options ```StatsAllowedIP``` to configuration of server/proxy;
    - add environment var ```ZBX_STATSALLOWEDIP``` if you use official docker image;
-2. Download zabbix_exporter from [release page](https://github.com/shdubna/zabbix_exporter/releases) or use [docker image](https://github.com/shdubna/testci/pkgs/container/zabbix_exporter).
+2. Download zabbix_exporter from [release page](https://github.com/shdubna/zabbix_exporter/releases) or use [docker image](https://github.com/shdubna/zabbix_exporter/pkgs/container/zabbix_exporter).
 3. Run zabbix exporter:
    - via binary
    ```bash
