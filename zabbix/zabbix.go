@@ -6,6 +6,7 @@ import (
 	"github.com/akomic/go-zabbix-proto/client"
 	"github.com/prometheus/client_golang/prometheus"
 	"log"
+	"slices"
 	"strings"
 	"unicode"
 )
@@ -43,7 +44,7 @@ func (zabbix *Zabbix) GetMetrics() (response *ZabbixResponse, err error) {
 	}
 
 	if response.Response != `success` {
-		err = fmt.Errorf("Error sending heartbeat: %s", response.Response)
+		err = fmt.Errorf("error sending heartbeat: %s", response.Response)
 	}
 	return
 }
@@ -77,7 +78,7 @@ func NewZabbixResponse(data []uint8) (r *ZabbixResponse, err error) {
 	r = &ZabbixResponse{Response: string(jsonData)}
 	err = json.Unmarshal(jsonData, r)
 	if err != nil {
-		err = fmt.Errorf("Error decoding response: %v", err)
+		err = fmt.Errorf("error decoding response: %v", err)
 		if e, ok := err.(*json.SyntaxError); ok {
 			err = fmt.Errorf("%s ; Syntax error at byte offset %d", err, e.Offset)
 		}
@@ -126,37 +127,43 @@ func (zabbix *Zabbix) Collect(ch chan<- prometheus.Metric) {
 func (zabbix *Zabbix) collect(ch chan<- prometheus.Metric) error {
 	metrics, err := zabbix.GetMetrics()
 	if err != nil {
-		return fmt.Errorf("Error scraping zabbix: %v", err)
+		return fmt.Errorf("error scraping zabbix: %v", err)
 	}
-	getMetricRecursive(metrics.Data, ch, "")
+	var exists []string
+	getMetricRecursive(metrics.Data, ch, "", exists)
 	return nil
 }
 
-func getMetricRecursive(metrics map[string]interface{}, ch chan<- prometheus.Metric, prefix string) {
+func getMetricRecursive(metrics map[string]interface{}, ch chan<- prometheus.Metric, prefix string, exists []string) {
 	for key, value := range metrics {
-		name := prefix + key
-		switch value.(type) {
+		name := metricName(prefix + key)
+		if slices.Contains(exists, name) {
+			return
+		}
+		switch value := value.(type) {
 		case float64:
 			newMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      metricName(name),
 			}, []string{}).WithLabelValues()
-			newMetric.Set(value.(float64))
+			newMetric.Set(value)
 			newMetric.Collect(ch)
+			exists = append(exists, name)
 		case string:
 			if key == "version" {
 				newMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 					Namespace: namespace,
 					Name:      metricName("info"),
 					Help:      "Info abount instance",
-				}, []string{"version"}).WithLabelValues(value.(string))
+				}, []string{"version"}).WithLabelValues(value)
 				newMetric.Set(1)
 				newMetric.Collect(ch)
+				exists = append(exists, name)
 			}
 		case []interface{}:
-			parseSlice(ch, key, value.([]interface{}))
+			parseSlice(ch, key, value)
 		case map[string]interface{}:
-			getMetricRecursive(value.(map[string]interface{}), ch, name+"_")
+			getMetricRecursive(value, ch, name+"_", exists)
 		}
 	}
 }
@@ -179,11 +186,11 @@ func parseSlice(ch chan<- prometheus.Metric, category string, items []interface{
 			for key, value := range p {
 				var floatMetric float64 = 0
 				name := category + "_" + key
-				switch value.(type) {
+				switch value := value.(type) {
 				case float64:
-					floatMetric = value.(float64)
+					floatMetric = value
 				case bool:
-					if value.(bool) {
+					if value {
 						floatMetric = 1
 					} else {
 						floatMetric = 0
