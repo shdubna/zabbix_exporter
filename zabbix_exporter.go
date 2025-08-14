@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/shdubna/zabbix_exporter/zabbix"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
-	"zabbix_exporter/zabbix"
 )
 
 var gitTag string
