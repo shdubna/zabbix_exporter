@@ -54,6 +54,8 @@ type StatsPacket struct {
 	Request string `json:"request"`
 }
 
+var Exists []string
+
 // NewStatsPacket constructor.
 func (zabbix *Zabbix) NewStatsPacket(request string) *client.Packet {
 	ap := &StatsPacket{Request: request}
@@ -129,17 +131,27 @@ func (zabbix *Zabbix) collect(ch chan<- prometheus.Metric) error {
 	if err != nil {
 		return fmt.Errorf("error scraping zabbix: %v", err)
 	}
-	var exists []string
-	getMetricRecursive(metrics.Data, ch, "", exists)
+	getMetricRecursive(metrics.Data, ch, "")
+	Exists = nil
 	return nil
 }
 
-func getMetricRecursive(metrics map[string]interface{}, ch chan<- prometheus.Metric, prefix string, exists []string) {
+func checkExists(name string) bool {
+	if slices.Contains(Exists, name) {
+		return true
+	}
+	Exists = append(Exists, name)
+	return false
+}
+
+func getMetricRecursive(metrics map[string]interface{}, ch chan<- prometheus.Metric, prefix string) {
 	for key, value := range metrics {
 		name := metricName(prefix + key)
-		if slices.Contains(exists, name) {
-			return
+
+		if checkExists(name) {
+			continue
 		}
+
 		switch value := value.(type) {
 		case float64:
 			newMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -148,7 +160,6 @@ func getMetricRecursive(metrics map[string]interface{}, ch chan<- prometheus.Met
 			}, []string{}).WithLabelValues()
 			newMetric.Set(value)
 			newMetric.Collect(ch)
-			exists = append(exists, name)
 		case string:
 			if key == "version" {
 				newMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -158,12 +169,11 @@ func getMetricRecursive(metrics map[string]interface{}, ch chan<- prometheus.Met
 				}, []string{"version"}).WithLabelValues(value)
 				newMetric.Set(1)
 				newMetric.Collect(ch)
-				exists = append(exists, name)
 			}
 		case []interface{}:
 			parseSlice(ch, key, value)
 		case map[string]interface{}:
-			getMetricRecursive(value, ch, name+"_", exists)
+			getMetricRecursive(value, ch, name+"_",)
 		}
 	}
 }
